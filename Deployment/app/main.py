@@ -2,14 +2,14 @@ import os
 import json
 import openai
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
-from langchain.vectorstores import FAISS
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 # You might pull this from environment variables in production
 # openai.api_key = os.getenv("OPENAI_API_KEY", "replace_with_key_if_needed")
-openai.api_key = "Key"
+openai.api_key = "key"
 
 # Initialize at import-time so it can be reused across requests
 embedding_model = OpenAIEmbeddings(
