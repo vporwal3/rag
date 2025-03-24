@@ -1,0 +1,6 @@
+azure-functions
+openai
+langchain
+faiss-cpu
+tiktoken
+numpy
