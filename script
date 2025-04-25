@@ -1,0 +1,69 @@
+from typing import List, Union, Generator, Iterator
+from pydantic import BaseModel
+import requests
+import os
+
+
+class Pipe:
+    class Valves(BaseModel):
+        RAG_API_KEY: str = os.getenv("MY_RAG_API_KEY", "your_fallback_key")
+        RAG_API_URL: str = os.getenv(
+            "MY_RAG_API_URL", "https://my-rag-app.azurewebsites.net/api/app"
+        )
+
+    def __init__(self):
+        self.name = "My Azure Function RAG Pipe"
+        self.valves = self.Valves()
+
+    async def on_startup(self):
+        print(f"on_startup:{__name__}")
+
+    async def on_shutdown(self):
+        print(f"on_shutdown:{__name__}")
+
+    def pipe(self, body: dict) -> Union[str, Generator, Iterator]:
+        print(f"pipe:{__name__}")
+
+        # Extract latest user message from OpenAI-style body
+        messages = body.get("messages", [])
+        user_message = ""
+        for m in reversed(messages):
+            if m.get("role") == "user":
+                user_message = m.get("content", "")
+                break
+
+        if not user_message:
+            return "Error: No user message found."
+
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(
+                f"{self.valves.RAG_API_URL}?code={self.valves.RAG_API_KEY}",
+                json={"query": user_message},
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Return OpenAI-style response
+            return {
+                "id": "chatcmpl-custom",
+                "object": "chat.completion",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": data.get("answer", "[No response]"),
+                        },
+                        "finish_reason": "stop",
+                        "index": 0,
+                    }
+                ],
+                "model": body.get("model", "custom-rag-model"),
+            }
+
+        except Exception as e:
+            print("Error calling Azure Function:", e)
+            return f"Error calling Azure Function: {e}"
